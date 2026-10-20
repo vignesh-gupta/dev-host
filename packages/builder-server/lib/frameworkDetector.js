@@ -2,7 +2,12 @@ const fs = require("fs")
 const path = require("path")
 
 function findNextConfig(repoDir) {
-  for (const filename of ["next.config.js", "next.config.mjs", "next.config.ts"]) {
+  for (const filename of [
+    "next.config.js",
+    "next.config.mjs",
+    "next.config.cjs",
+    "next.config.ts",
+  ]) {
     const configPath = path.join(repoDir, filename)
     if (fs.existsSync(configPath)) return configPath
   }
@@ -16,11 +21,14 @@ function findNextConfig(repoDir) {
  */
 function detectDeploymentType(repoDir, options = {}) {
   const configuredOutputDir = options.configuredOutputDir || "dist"
-  if (options.framework !== "NEXT") {
+  const framework = String(options.framework || "").trim().toUpperCase()
+  if (framework !== "NEXT") {
     return { deploymentType: "STATIC", outputDir: configuredOutputDir }
   }
 
   const configPath = findNextConfig(repoDir)
+  // Next.js is server-rendered by default. OpenNext handles the normal Next
+  // build output, so a standalone setting is not required.
   if (!configPath) return { deploymentType: "SSR", outputDir: configuredOutputDir }
 
   const source = fs.readFileSync(configPath, "utf8")

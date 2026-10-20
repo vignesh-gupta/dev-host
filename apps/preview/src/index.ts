@@ -4,7 +4,33 @@
   const PORT = process.env.PORT || 8000;
   const app = express();
   const proxy = httpProxy.createProxy();
-  const s3BaseUrl = process.env.S3_BASE_URL
+  const s3BaseUrl = process.env.S3_BASE_URL;
+
+  function lambdaProxyOptions(lambdaUrl: string) {
+    const parsedLambdaUrl = new URL(lambdaUrl);
+    const isLocalLambdaUrl =
+      parsedLambdaUrl.hostname === "localhost" ||
+      parsedLambdaUrl.hostname === "127.0.0.1" ||
+      parsedLambdaUrl.hostname.endsWith(".localhost");
+
+    if (!isLocalLambdaUrl) {
+      return { target: lambdaUrl, changeOrigin: true };
+    }
+
+    const localEndpoint = new URL(
+      process.env.LAMBDA_PROXY_ENDPOINT ||
+        process.env.AWS_ENDPOINT_URL ||
+        "http://localhost:4566"
+    );
+    localEndpoint.pathname = parsedLambdaUrl.pathname;
+    localEndpoint.search = parsedLambdaUrl.search;
+
+    return {
+      target: localEndpoint.toString(),
+      changeOrigin: false,
+      headers: { host: parsedLambdaUrl.host },
+    };
+  }
 
   app.use(async (req, res) => {
     try {
@@ -34,14 +60,23 @@
         if (!lambdaUrl) {
           throw new Error("SSR project is missing its Lambda Function URL");
         }
-        return proxy.web(req, res, { target: lambdaUrl, changeOrigin: true });
+        return proxy.web(req, res, lambdaProxyOptions(lambdaUrl));
       }
 
       if (!activeDeploymentId) {
         throw new Error("Static project is missing an active deployment");
       }
-      const target = `${s3BaseUrl}${projectId}/${activeDeploymentId}/${req.url === "/" ? "index.html" : ""}`;
-      return proxy.web(req, res, { target, changeOrigin: true });
+      const requestUrl = new URL(req.url, "http://preview.local");
+      const objectPath =
+        requestUrl.pathname === "/"
+          ? "index.html"
+          : requestUrl.pathname.replace(/^\/+/, "");
+      const target = `${s3BaseUrl.replace(/\/+$/, "")}/${projectId}/${activeDeploymentId}/${objectPath}${requestUrl.search}`;
+      return proxy.web(req, res, {
+        target,
+        changeOrigin: true,
+        ignorePath: true,
+      });
     } catch (error) {
       console.error("Failed to resolve base URL:", error);
       return res.status(502).send("Unable to resolve the base URL");

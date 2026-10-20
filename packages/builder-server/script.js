@@ -37,10 +37,11 @@ async function init() {
     commitMessage: commit.message,
   })
 
-  const detection = detectDeploymentType(outDirPath, {
+  let detection = detectDeploymentType(outDirPath, {
     framework: process.env.FRAMEWORK,
     configuredOutputDir: OUTPUT_DIR,
   })
+  publishLog(`Framework: ${process.env.FRAMEWORK || "not set"}`)
   publishLog(`Deployment type: ${detection.deploymentType}`)
   if (detection.deploymentType === "SSR") {
     publishLog("Next.js SSR detected — Lambda packaging will run after the build")
@@ -53,6 +54,16 @@ async function init() {
   })
 
   publishLog("Build completed")
+
+  if (detection.deploymentType === "STATIC") {
+    const distFolderPath = path.resolve(outDirPath, detection.outputDir)
+    if (!fs.existsSync(distFolderPath) && fs.existsSync(path.join(outDirPath, ".next"))) {
+      publishLog(
+        `Static output "${detection.outputDir}" was not produced; using the Next.js server output instead`
+      )
+      detection = { deploymentType: "SSR", outputDir: detection.outputDir }
+    }
+  }
 
   if (detection.deploymentType === "STATIC") {
     const distFolderPath = path.resolve(outDirPath, detection.outputDir)

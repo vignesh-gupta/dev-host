@@ -56,7 +56,9 @@ docker run --rm -it postgres:18.6-alpine \
 
 Start floci and register the builder task with
 `LAMBDA_EXECUTION_ROLE_ARN=arn:aws:iam::000000000000:role/local-lambda-role`.
-Deploy a Next.js project whose `next.config.*` uses `output: "standalone"`.
+Deploy a Next.js project with the default server-rendered output or with
+`next.config.*` using `output: "standalone"`. Neither setting is required for
+OpenNext; only `output: "export"` selects the static deployment path.
 The builder packages the OpenNext server output, creates a Lambda function and
 Function URL at the floci endpoint, and reports the URL to the web app. The
 preview server then routes that project's requests to the Function URL.
@@ -75,3 +77,7 @@ export AWS_BUCKET_NAME=simple-vercel-output
 
 The builder uses `AWS_ENDPOINT_URL` for both S3 and Lambda. Confirm the Lambda
 function and Function URL with floci's AWS-compatible CLI after a deployment.
+When the returned local Function URL uses a `*.lambda-url.*.localhost`
+hostname, set `LAMBDA_PROXY_ENDPOINT=http://localhost:4566` for the preview
+server. The proxy connects to floci through that endpoint while preserving the
+Function URL host header for Lambda URL routing.

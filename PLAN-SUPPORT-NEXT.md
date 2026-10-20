@@ -1,7 +1,7 @@
 # Plan: Next.js SSR Support via OpenNext + Lambda
 
 **Approach:** OpenNext + AWS Lambda Function URL + S3 static assets  
-**Goal:** Next.js projects with `output: "standalone"` get deployed to Lambda; static projects (React, Vue, Svelte, Next.js `output: "export"`) continue using the existing S3-only path unchanged.
+**Goal:** Next.js projects using the default server-rendered output or `output: "standalone"` get deployed to Lambda; static projects (React, Vue, Svelte, Next.js `output: "export"`) continue using the existing S3-only path unchanged.
 
 ---
 
@@ -78,7 +78,7 @@ Run `pnpm db:update` to apply the new columns. For existing deployments, the `@d
 The builder needs to know whether a project produces static output or needs SSR. Two signals are available:
 
 1. **`Framework` enum on the Project** — already `NEXT` for Next.js projects.
-2. **The actual `next.config.*` in the cloned repo** — the source of truth for `output: "standalone"` vs `output: "export"`.
+2. **The actual `next.config.*` in the cloned repo** — the source of truth for `output: "export"` vs server-rendered output.
 
 The Project's `framework` field tells the builder to _look_ for a Next.js config; the config file tells it _what kind_ of build this is.
 
@@ -170,7 +170,7 @@ The existing Dockerfile already does `npm ci`. No changes needed as long as the 
  *
  * Preconditions:
  * - `npm run build` (or equivalent) has already run successfully.
- * - The repo has `next.config` with `output: "standalone"`.
+ * - The repo may have `next.config` with `output: "standalone"`, but this is not required.
  *
  * What it does:
  * 1. Writes a minimal `open-next.config.ts` into the repo root (if not present):
@@ -527,7 +527,7 @@ Add `LAMBDA_EXECUTION_ROLE_ARN` to the task definition environment variables (us
 
 ### Task 7.3 — Update `scripts/rds.md` or add a Lambda testing note
 
-Document how to test SSR deployments locally: deploy a sample Next.js app with `output: "standalone"`, verify Lambda is created in LocalStack, verify the preview server routes to it.
+Document how to test SSR deployments locally: deploy a sample Next.js app with either the default Next.js output or `output: "standalone"`, verify Lambda is created in LocalStack, and verify the preview server routes to it.
 
 ---
 

@@ -6,6 +6,22 @@ const { publishLog } = require("./config")
 
 const execFileAsync = promisify(execFile)
 
+function resolveOpenNextCli() {
+  const cliPath = path.resolve(
+    __dirname,
+    "..",
+    "node_modules",
+    "@opennextjs",
+    "aws",
+    "dist",
+    "index.js"
+  )
+  if (!fs.existsSync(cliPath)) {
+    throw new Error(`OpenNext CLI not found at ${cliPath}`)
+  }
+  return cliPath
+}
+
 async function buildWithOpenNext(repoDir) {
   const configPath = path.join(repoDir, "open-next.config.ts")
   if (!fs.existsSync(configPath)) {
@@ -16,7 +32,7 @@ async function buildWithOpenNext(repoDir) {
   }
 
   publishLog("Starting OpenNext build")
-  await execFileAsync("npx", ["@opennextjs/aws", "build"], {
+  await execFileAsync(process.execPath, [resolveOpenNextCli(), "build"], {
     cwd: repoDir,
     env: process.env,
     maxBuffer: 10 * 1024 * 1024,
