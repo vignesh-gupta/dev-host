@@ -1,5 +1,8 @@
 # Dev Host
 
+<img width="1732" height="908" alt="image" src="https://github.com/user-attachments/assets/2d769814-ed89-4106-bfda-df0e2c05abd0" />
+
+## Intro
 Dev Host is a Vercel-like deployment control plane for front-end projects.
 Register a GitHub repository, choose its build settings, watch an isolated
 builder run, and serve the successful output from a project subdomain.
