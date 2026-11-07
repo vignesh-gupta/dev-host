@@ -29,9 +29,33 @@ function parseEnv(json) {
     return Object.fromEntries(
       JSON.parse(json || "[]").map(({ key, value }) => [key, value])
     )
-  } catch {
-    return {}
+  } catch (err) {
+    throw new Error(
+      `BUILD_ENV_JSON must be a JSON array of {key,value} entries: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+      { cause: err }
+    )
   }
+}
+
+function buildEnvironment(envJson) {
+  const blockedNames = new Set([
+    "AWS_ACCESS_KEY_ID",
+    "AWS_SECRET_ACCESS_KEY",
+    "AWS_SESSION_TOKEN",
+    "AWS_SECURITY_TOKEN",
+    "GIT_PAT_TOKEN",
+    "BUILDER_CALLBACK_TOKEN",
+    "REDIS_URL",
+    "DATABASE_URL",
+    "LAMBDA_EXECUTION_ROLE_ARN",
+    "LAMBDA_S3_BUCKET",
+  ])
+  const inherited = Object.fromEntries(
+    Object.entries(process.env).filter(([name]) => !blockedNames.has(name))
+  )
+  return { ...inherited, ...parseEnv(envJson), CI: "1" }
 }
 
 function runBuild(outDirPath, { installCommand, buildCommand, envJson } = {}) {
@@ -44,7 +68,7 @@ function runBuild(outDirPath, { installCommand, buildCommand, envJson } = {}) {
 
     const p = exec(`${installCmd} && ${buildCmd}`, {
       cwd: outDirPath,
-      env: { ...process.env, ...parseEnv(envJson), CI: "1" },
+      env: buildEnvironment(envJson),
       maxBuffer: 64 * 1024 * 1024,
     })
 
@@ -58,4 +82,10 @@ function runBuild(outDirPath, { installCommand, buildCommand, envJson } = {}) {
   })
 }
 
-module.exports = { runBuild, detectPackageManager, resolveCommands }
+module.exports = {
+  runBuild,
+  detectPackageManager,
+  resolveCommands,
+  parseEnv,
+  buildEnvironment,
+}

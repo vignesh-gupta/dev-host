@@ -6,6 +6,76 @@ const { publishLog } = require("./config")
 
 const execFileAsync = promisify(execFile)
 
+function getDirectorySize(directory) {
+  let total = 0
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const entryPath = path.join(directory, entry.name)
+    total += entry.isDirectory()
+      ? getDirectorySize(entryPath)
+      : entry.isFile()
+        ? fs.statSync(entryPath).size
+        : 0
+  }
+  return total
+}
+
+function logOpenNextSizes(outputDir) {
+  publishLog("OpenNext output size breakdown:")
+  for (const entry of fs.readdirSync(outputDir, { withFileTypes: true })) {
+    const entryPath = path.join(outputDir, entry.name)
+    publishLog(
+      `  ${entry.name}: ${getDirectorySize(entryPath)} bytes`
+    )
+  }
+
+  const serverFunctionsDir = path.join(outputDir, "server-functions")
+  if (fs.existsSync(serverFunctionsDir)) {
+    for (const entry of fs.readdirSync(serverFunctionsDir, {
+      withFileTypes: true,
+    })) {
+      const entryPath = path.join(serverFunctionsDir, entry.name)
+      publishLog(
+        `  server function ${entry.name}: ${getDirectorySize(entryPath)} bytes`
+      )
+    }
+  }
+
+  const defaultNodeModules = path.join(
+    serverFunctionsDir,
+    "default",
+    "node_modules"
+  )
+  if (fs.existsSync(defaultNodeModules)) {
+    const directories = []
+    const walk = (directory, depth) => {
+      if (depth > 3) return
+      for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue
+        const entryPath = path.join(directory, entry.name)
+        directories.push({
+          path: entryPath,
+          bytes: getDirectorySize(entryPath),
+        })
+        walk(entryPath, depth + 1)
+      }
+    }
+    walk(defaultNodeModules, 0)
+    directories
+      .sort((a, b) => b.bytes - a.bytes)
+      .slice(0, 25)
+      .reverse()
+      .forEach(({ path: directory, bytes }) => {
+        publishLog(`  node_modules ${bytes} bytes ${directory}`)
+      })
+  }
+
+  publishLog(
+    `OpenNext server function total: ${getDirectorySize(
+      path.join(outputDir, "server-functions", "default")
+    )} bytes`
+  )
+}
+
 function resolveOpenNextCli() {
   const cliPath = path.resolve(
     __dirname,
@@ -22,12 +92,42 @@ function resolveOpenNextCli() {
   return cliPath
 }
 
+function resolveNextVersion(repoDir) {
+  const packageJsonPath = path.join(repoDir, "package.json")
+  if (!fs.existsSync(packageJsonPath)) {
+    throw new Error(`package.json not found at ${packageJsonPath}`)
+  }
+
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"))
+  const nextVersion =
+    packageJson.dependencies?.next ||
+    packageJson.devDependencies?.next ||
+    packageJson.peerDependencies?.next
+
+  if (!nextVersion || typeof nextVersion !== "string") {
+    throw new Error("Next.js dependency is required for an SSR deployment")
+  }
+
+  return nextVersion
+}
+
 async function buildWithOpenNext(repoDir) {
   const configPath = path.join(repoDir, "open-next.config.ts")
   if (!fs.existsSync(configPath)) {
+    const nextVersion = resolveNextVersion(repoDir)
     fs.writeFileSync(
       configPath,
-      'export default { default: { override: { wrapper: "aws-lambda-streaming" } } }\n'
+      `export default {
+  default: {
+        minify: true,
+        override: { wrapper: "aws-lambda-streaming" },
+        install: {
+      packages: [${JSON.stringify(`next@${nextVersion}`)}],
+      additionalArgs: "--omit=optional",
+    },
+  },
+}
+`
     )
   }
 
@@ -48,6 +148,7 @@ async function buildWithOpenNext(repoDir) {
     throw new Error(`OpenNext assets output not found at ${assetsDir}`)
   }
 
+  logOpenNextSizes(outputDir)
   return { serverDir, assetsDir }
 }
 

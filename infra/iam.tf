@@ -72,6 +72,7 @@ resource "aws_iam_role_policy" "builder_lambda" {
       Action = [
         "lambda:CreateFunction",
         "lambda:UpdateFunctionCode",
+        "lambda:UpdateFunctionConfiguration",
         "lambda:CreateFunctionUrlConfig",
         "lambda:GetFunction",
         "lambda:DeleteFunction",
@@ -144,7 +145,10 @@ resource "aws_iam_user_policy" "uploader" {
     Statement = [{
       Effect   = "Allow"
       Action   = ["s3:PutObject"]
-      Resource = "${aws_s3_bucket.outputs.arn}/__outputs/*"
+      Resource = [
+        "${aws_s3_bucket.outputs.arn}/__outputs/*",
+        "${aws_s3_bucket.outputs.arn}/__lambdas/*",
+      ]
     }]
   })
 }

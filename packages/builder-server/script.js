@@ -3,7 +3,7 @@ const fs = require("fs")
 const { publishLog } = require("./lib/config")
 const { closePublisher } = require("./lib/config")
 const { cloneRepo } = require("./lib/git")
-const { runBuild } = require("./lib/buildRunner")
+const { runBuild, parseEnv } = require("./lib/buildRunner")
 const { uploadDist, uploadLambdaZip } = require("./lib/uploader")
 const { updateDeploymentStatus } = require("./lib/deploymentStatus")
 const { detectDeploymentType } = require("./lib/frameworkDetector")
@@ -41,7 +41,7 @@ async function init() {
     framework: process.env.FRAMEWORK,
     configuredOutputDir: OUTPUT_DIR,
   })
-  publishLog(`Framework: ${process.env.FRAMEWORK || "not set"}`)
+  publishLog(`Framework: ${detection.framework}`)
   publishLog(`Deployment type: ${detection.deploymentType}`)
   if (detection.deploymentType === "SSR") {
     publishLog("Next.js SSR detected — Lambda packaging will run after the build")
@@ -55,15 +55,11 @@ async function init() {
 
   publishLog("Build completed")
 
-  if (detection.deploymentType === "STATIC") {
-    const distFolderPath = path.resolve(outDirPath, detection.outputDir)
-    if (!fs.existsSync(distFolderPath) && fs.existsSync(path.join(outDirPath, ".next"))) {
-      publishLog(
-        `Static output "${detection.outputDir}" was not produced; using the Next.js server output instead`
-      )
-      detection = { deploymentType: "SSR", outputDir: detection.outputDir }
-    }
-  }
+  detection = detectDeploymentType(outDirPath, {
+    framework: detection.framework,
+    configuredOutputDir: OUTPUT_DIR,
+  })
+  publishLog(`Build output decision: ${detection.deploymentType}`)
 
   if (detection.deploymentType === "STATIC") {
     const distFolderPath = path.resolve(outDirPath, detection.outputDir)
@@ -95,6 +91,7 @@ async function init() {
       deploymentId: DEPLOYMENT_ID,
       s3Bucket: process.env.LAMBDA_S3_BUCKET || process.env.AWS_BUCKET_NAME,
       s3Key: lambdaKey,
+      environment: parseEnv(process.env.BUILD_ENV_JSON),
     })
     await updateDeploymentStatus("READY", {
       s3Path,

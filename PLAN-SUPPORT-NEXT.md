@@ -1,5 +1,18 @@
 # Plan: Next.js SSR Support via OpenNext + Lambda
 
+## Current deployment constraints
+
+- Lambda ZIP deployments are measured by their expanded size: AWS permits 250 MB
+  (262,144,000 bytes), even when the ZIP is uploaded through S3.
+- The builder prunes source maps, declarations, build caches, compiler binaries,
+  documentation/test directories, and image-runtime packages when image
+  optimization is not enabled. It logs the measured expanded size before upload.
+- Projects with `output: "export"` and a produced `out/` directory remain on the
+  S3-only path. Prerendered routes in a normal Next.js build are not by
+  themselves a static export; the server path remains required for those builds.
+- A package that remains above the ZIP limit must use the planned Lambda
+  container-image path rather than more arbitrary file exclusions.
+
 **Approach:** OpenNext + AWS Lambda Function URL + S3 static assets  
 **Goal:** Next.js projects using the default server-rendered output or `output: "standalone"` get deployed to Lambda; static projects (React, Vue, Svelte, Next.js `output: "export"`) continue using the existing S3-only path unchanged.
 

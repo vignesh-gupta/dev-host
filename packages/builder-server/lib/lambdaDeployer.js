@@ -4,6 +4,7 @@ const {
   DeleteFunctionCommand,
   GetFunctionCommand,
   LambdaClient,
+  UpdateFunctionConfigurationCommand,
   UpdateFunctionCodeCommand,
   UpdateFunctionUrlConfigCommand,
   waitUntilFunctionActiveV2,
@@ -24,7 +25,19 @@ function functionName(projectId, deploymentId) {
   return `devhoster-${projectId}-${deploymentId}`.slice(0, 64)
 }
 
-async function deployLambda({ projectId, deploymentId, s3Bucket, s3Key }) {
+async function deployLambda({
+  projectId,
+  deploymentId,
+  s3Bucket,
+  s3Key,
+  environment = {},
+}) {
+  const environmentBytes = Buffer.byteLength(JSON.stringify(environment), "utf8")
+  if (environmentBytes > 4 * 1024) {
+    throw new Error(
+      `Lambda runtime environment is ${environmentBytes} bytes; AWS allows at most 4096 bytes`
+    )
+  }
   const lambda = lambdaClient()
   const name = functionName(projectId, deploymentId)
   const role = process.env.LAMBDA_EXECUTION_ROLE_ARN
@@ -59,6 +72,16 @@ async function deployLambda({ projectId, deploymentId, s3Bucket, s3Key }) {
         Publish: true,
         Timeout: 30,
         MemorySize: 1024,
+        Environment: { Variables: environment },
+      })
+    )
+  }
+
+  if (existing) {
+    await lambda.send(
+      new UpdateFunctionConfigurationCommand({
+        FunctionName: name,
+        Environment: { Variables: environment },
       })
     )
   }
