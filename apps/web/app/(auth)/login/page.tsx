@@ -1,8 +1,12 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { LoginForm } from "@/components/auth/auth-forms"
+import { createPageMetadata } from "@/lib/seo"
 
-export const metadata: Metadata = { title: "Sign in" }
+export const metadata: Metadata = createPageMetadata(
+  "Sign in",
+  "Sign in to manage your Dev Host projects and deployments.",
+)
 
 export default function LoginPage() {
   return (

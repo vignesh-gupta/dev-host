@@ -2,8 +2,13 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@dev-hoster/ui/components/sidebar"
+import type { Metadata } from "next"
 import { AppSidebar } from "@/components/app-sidebar"
 import { AppTopbar } from "@/components/app-topbar"
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+}
 
 export default function AppLayout({
   children,

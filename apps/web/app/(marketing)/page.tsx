@@ -4,12 +4,26 @@ import { Closing, LogsSection } from "@/components/landing/closing"
 import { Hero } from "@/components/landing/hero"
 import { LandingNav } from "@/components/landing/pill-nav"
 import { PipelineStory } from "@/components/landing/pipeline-story"
+import { siteDescription, siteName, socialImage } from "@/lib/seo"
 
 export const metadata: Metadata = {
-  authors: [{ name: "Vignesh Gupta" }],
-  title: { absolute: "Dev Hoster — push to Git, we host it" },
-  description:
-    "Connect your Git repository and Dev Hoster builds, deploys and hosts it for you. Next.js and static sites, live on every push.",
+  title: { absolute: "Dev Host — push to Git, we host it" },
+  description: siteDescription,
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "Dev Host — push to Git, we host it",
+    description: siteDescription,
+    siteName,
+    type: "website",
+    url: "/",
+    images: [socialImage],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Dev Host — push to Git, we host it",
+    description: siteDescription,
+    images: [socialImage.url],
+  },
 }
 
 export default function LandingPage() {

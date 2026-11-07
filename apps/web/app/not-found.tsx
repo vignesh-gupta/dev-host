@@ -1,4 +1,10 @@
+import type { Metadata } from "next"
 import { LinkButton } from "@/components/link-button"
+
+export const metadata: Metadata = {
+  title: "Page not found",
+  description: "The requested Dev Host page could not be found.",
+}
 
 export default function NotFound() {
   return (

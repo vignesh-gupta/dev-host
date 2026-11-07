@@ -10,7 +10,7 @@ Developers who deploy their own front-end projects. Today it is a single user (u
 
 ## Product Purpose
 
-A Vercel-like "dev hoster": each project is a Git repo, each deploy builds it in a container, uploads `dist/` to S3, and serves it on `<slug>.host`. The UI is the control plane for projects, deployments, build logs, environment variables and domains. Success is a developer going from "paste a repo URL" to "visiting the live site" without reading docs, and being able to trust what the status badges say.
+A Vercel-like "dev host": each project is a Git repo, each deploy builds it in a container, uploads `dist/` to S3, and serves it on `<slug>.host`. The UI is the control plane for projects, deployments, build logs, environment variables and domains. Success is a developer going from "paste a repo URL" to "visiting the live site" without reading docs, and being able to trust what the status badges say.
 
 ## Brand Personality
 

@@ -52,7 +52,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link href="/dashboard" />}>
               <LogoMark />
-              <span className="font-semibold tracking-tight">Dev Hoster</span>
+              <span className="font-semibold tracking-tight">Dev Host</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

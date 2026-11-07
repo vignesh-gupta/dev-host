@@ -6,7 +6,7 @@ AGENTS.md warns that the Next.js version here (16.x) has breaking changes from w
 
 ## What this is
 
-A Vercel-like "dev hoster": users register a Git repo as a Project, each deploy builds the repo (branch or exact commit) in an ECS task, uploads the build output to S3, and a reverse proxy serves it by subdomain. Infra is emulated locally with **floci** (LocalStack-style AWS at `http://localhost:4566`, ECR at `localhost:5100`). The MVP targets static output (React, Vue, Svelte, static sites, and Next.js via `output: "export"`).
+A Vercel-like "dev host": users register a Git repo as a Project, each deploy builds the repo (branch or exact commit) in an ECS task, uploads the build output to S3, and a reverse proxy serves it by subdomain. Infra is emulated locally with **floci** (LocalStack-style AWS at `http://localhost:4566`, ECR at `localhost:5100`). The MVP targets static output (React, Vue, Svelte, static sites, and Next.js via `output: "export"`).
 
 pnpm + Turborepo monorepo (Node >=20, pnpm 10).
 

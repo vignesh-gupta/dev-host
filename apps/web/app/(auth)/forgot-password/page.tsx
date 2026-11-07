@@ -1,8 +1,12 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { ForgotPasswordForm } from "@/components/auth/auth-forms"
+import { createPageMetadata } from "@/lib/seo"
 
-export const metadata: Metadata = { title: "Reset your password" }
+export const metadata: Metadata = createPageMetadata(
+  "Reset your password",
+  "Request a secure link to reset your Dev Host password.",
+)
 
 export default function ForgotPasswordPage() {
   return (

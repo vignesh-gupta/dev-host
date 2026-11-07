@@ -1,7 +1,11 @@
 import type { Metadata } from "next"
 import { DeploymentsView } from "@/components/deployments/deployments-view"
+import { createPageMetadata } from "@/lib/seo"
 
-export const metadata: Metadata = { title: "Deployments" }
+export const metadata: Metadata = createPageMetadata(
+  "Deployments",
+  "View every build and deployment for this Dev Host project.",
+)
 
 export default async function ProjectDeploymentsPage({
   params,

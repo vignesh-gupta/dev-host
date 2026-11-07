@@ -1,7 +1,11 @@
 import type { Metadata } from "next"
 import { ResetPasswordForm } from "@/components/auth/auth-forms"
+import { createPageMetadata } from "@/lib/seo"
 
-export const metadata: Metadata = { title: "Choose a new password" }
+export const metadata: Metadata = createPageMetadata(
+  "Choose a new password",
+  "Set a new password for your Dev Host account.",
+)
 
 export default function ResetPasswordPage() {
   return (

@@ -1,8 +1,12 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { SignupForm } from "@/components/auth/auth-forms"
+import { createPageMetadata } from "@/lib/seo"
 
-export const metadata: Metadata = { title: "Create account" }
+export const metadata: Metadata = createPageMetadata(
+  "Create account",
+  "Create a Dev Host account and deploy your first repository in a minute.",
+)
 
 export default function SignupPage() {
   return (

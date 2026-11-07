@@ -44,12 +44,12 @@ export function LandingNav() {
           href="/"
           className="flex shrink-0 items-center gap-2.5 outline-none focus-visible:underline"
         >
-          <LogoMark className="size-7 bg-[var(--l-ink)] text-[var(--l-orange)]" />
+          <LogoMark className="size-7 bg-(--l-ink) text-(--l-orange)" />
           <span
             className="text-base font-black tracking-tight uppercase"
             style={{ fontStretch: "118%" }}
           >
-            Dev Hoster
+            Dev Host
           </span>
         </Link>
 

@@ -1,7 +1,11 @@
 import type { Metadata } from "next"
 import { DomainsManager } from "@/components/projects/domains-manager"
+import { createPageMetadata } from "@/lib/seo"
 
-export const metadata: Metadata = { title: "Domains" }
+export const metadata: Metadata = createPageMetadata(
+  "Domains",
+  "Connect and verify custom domains for this Dev Host project.",
+)
 
 export default async function DomainsPage({
   params,

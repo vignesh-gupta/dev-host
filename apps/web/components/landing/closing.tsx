@@ -28,7 +28,7 @@ export function LogsSection() {
 export function Closing() {
   return (
     <>
-      <section className="bg-[var(--l-orange)] px-5 py-24 sm:px-8 sm:py-36">
+      <section className="bg-(--l-orange) px-5 py-24 sm:px-8 sm:py-36">
         <Reveal className="mx-auto max-w-7xl">
           <h2 className="display text-[clamp(2.6rem,10vw,6rem)]">
             Ship the
@@ -46,7 +46,7 @@ export function Closing() {
         </Reveal>
       </section>
 
-      <footer className="overflow-hidden bg-[var(--l-ink)] text-[var(--l-concrete)]">
+      <footer className="overflow-hidden bg-(--l-ink) text-(--l-concrete)">
         <div className="mx-auto grid max-w-7xl gap-10 px-5 pt-16 pb-10 sm:px-8 md:grid-cols-[1.2fr_1fr_1fr]">
           <div className="space-y-4">
             <div className="flex items-center gap-2.5">
@@ -55,7 +55,7 @@ export function Closing() {
                 className="text-base font-black tracking-tight uppercase"
                 style={{ fontStretch: "118%" }}
               >
-                Dev Hoster
+                Dev Host
               </span>
             </div>
             <p className="body-l max-w-xs text-sm text-white/65">
@@ -67,9 +67,9 @@ export function Closing() {
           <nav aria-label="Footer" className="space-y-3 text-sm">
             <p className="font-mono-l text-xs text-white/45">Product</p>
             <ul className="space-y-2 font-semibold">
-              <li><Link href="/dashboard" className="hover:text-[var(--l-orange)]">Dashboard</Link></li>
-              <li><Link href="/projects" className="hover:text-[var(--l-orange)]">Projects</Link></li>
-              <li><Link href="/login" className="hover:text-[var(--l-orange)]">Sign in</Link></li>
+              <li><Link href="/dashboard" className="hover:text-(--l-orange)">Dashboard</Link></li>
+              <li><Link href="/projects" className="hover:text-(--l-orange)">Projects</Link></li>
+              <li><Link href="/login" className="hover:text-(--l-orange)">Sign in</Link></li>
             </ul>
           </nav>
 
@@ -84,18 +84,17 @@ export function Closing() {
           </div>
         </div>
 
-        {/* the wordmark: sized to the viewport so it always spans edge to edge */}
         <div aria-hidden className="select-none">
           <p
-            className="display -mb-[0.09em] text-center whitespace-nowrap text-[var(--l-orange)]"
+            className="display mb-[-0.09em] text-center whitespace-nowrap text-(--l-orange)"
             style={{ fontSize: "min(11.3vw, 14rem)", lineHeight: 0.8, textWrap: "nowrap" }}
           >
-            Dev Hoster
+            Dev Host
           </p>
         </div>
         <div className="border-t border-white/15">
           <p className="mx-auto max-w-7xl px-5 py-4 text-xs text-white/50 sm:px-8">
-            © {new Date().getFullYear()} Dev Hoster. Built by Vignesh Gupta.
+            © {new Date().getFullYear()} Dev Host. Built by Vignesh Gupta.
           </p>
         </div>
       </footer>
