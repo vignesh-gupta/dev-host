@@ -18,7 +18,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'e4c4e39e80e067a40392255ee7cfe738e7d69e785c0d7ef08044ba9a3e4797c6'>;
+  StorageHashBase<'006b4d4c871b67ed7546a1492dbf249b6b9c619b526f925c57e674eb11090bef'>;
 export type ExecutionHash =
   ExecutionHashBase<'eea5b73ec5209810ee7669b0445cf459b073531e502a7a459e2929b48c54848c'>;
 export type ProfileHash =
@@ -239,8 +239,11 @@ export type FieldOutputTypes = {
       readonly commitMessage: CodecTypes['pg/text@1']['output'] | null;
       readonly commitSha: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deploymentType: 'STATIC' | 'SSR';
       readonly finishedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
       readonly id: CodecTypes['pg/text@1']['output'];
+      readonly lambdaArn: CodecTypes['pg/text@1']['output'] | null;
+      readonly lambdaUrl: CodecTypes['pg/text@1']['output'] | null;
       readonly projectId: CodecTypes['pg/text@1']['output'];
       readonly s3Path: CodecTypes['pg/text@1']['output'] | null;
       readonly slug: CodecTypes['pg/text@1']['output'];
@@ -296,8 +299,11 @@ export type FieldInputTypes = {
       readonly commitMessage: CodecTypes['pg/text@1']['input'] | null;
       readonly commitSha: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deploymentType: 'STATIC' | 'SSR';
       readonly finishedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
       readonly id: CodecTypes['pg/text@1']['input'];
+      readonly lambdaArn: CodecTypes['pg/text@1']['input'] | null;
+      readonly lambdaUrl: CodecTypes['pg/text@1']['input'] | null;
       readonly projectId: CodecTypes['pg/text@1']['input'];
       readonly s3Path: CodecTypes['pg/text@1']['input'] | null;
       readonly slug: CodecTypes['pg/text@1']['input'];
@@ -353,8 +359,11 @@ export type StorageColumnTypes = {
       readonly commitMessage: CodecTypes['pg/text@1']['output'] | null;
       readonly commitSha: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deploymentType: 'STATIC' | 'SSR';
       readonly finishedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
       readonly id: CodecTypes['pg/text@1']['output'];
+      readonly lambdaArn: CodecTypes['pg/text@1']['output'] | null;
+      readonly lambdaUrl: CodecTypes['pg/text@1']['output'] | null;
       readonly projectId: CodecTypes['pg/text@1']['output'];
       readonly s3Path: CodecTypes['pg/text@1']['output'] | null;
       readonly slug: CodecTypes['pg/text@1']['output'];
@@ -410,8 +419,11 @@ export type StorageColumnInputTypes = {
       readonly commitMessage: CodecTypes['pg/text@1']['input'] | null;
       readonly commitSha: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deploymentType: 'STATIC' | 'SSR';
       readonly finishedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
       readonly id: CodecTypes['pg/text@1']['input'];
+      readonly lambdaArn: CodecTypes['pg/text@1']['input'] | null;
+      readonly lambdaUrl: CodecTypes['pg/text@1']['input'] | null;
       readonly projectId: CodecTypes['pg/text@1']['input'];
       readonly s3Path: CodecTypes['pg/text@1']['input'] | null;
       readonly slug: CodecTypes['pg/text@1']['input'];
@@ -467,8 +479,11 @@ export namespace Models {
     commitMessage: CodecTypes['pg/text@1']['output'] | null;
     commitSha: CodecTypes['pg/text@1']['output'] | null;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    deploymentType: 'STATIC' | 'SSR';
     finishedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
     id: CodecTypes['pg/text@1']['output'];
+    lambdaArn: CodecTypes['pg/text@1']['output'] | null;
+    lambdaUrl: CodecTypes['pg/text@1']['output'] | null;
     projectId: CodecTypes['pg/text@1']['output'];
     s3Path: CodecTypes['pg/text@1']['output'] | null;
     slug: CodecTypes['pg/text@1']['output'];
@@ -587,6 +602,16 @@ type ContractBase = Omit<
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
                   readonly many: false;
                 };
+                readonly deploymentType: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'STATIC'>;
+                  };
+                  readonly many: false;
+                };
                 readonly finishedAt: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-temporal@1';
@@ -597,6 +622,18 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly lambdaArn: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly lambdaUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly projectId: {
@@ -1010,6 +1047,10 @@ type ContractBase = Omit<
               readonly kind: 'valueSet';
               readonly values: readonly ['QUEUED', 'BUILDING', 'READY', 'FAILED'];
             };
+            readonly DeploymentType: {
+              readonly kind: 'valueSet';
+              readonly values: readonly ['STATIC', 'SSR'];
+            };
             readonly DomainStatus: {
               readonly kind: 'valueSet';
               readonly values: readonly ['PENDING', 'VERIFIED'];
@@ -1063,6 +1104,10 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
+              readonly deploymentType: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly finishedAt: {
                 readonly nullable: true;
                 readonly type: {
@@ -1072,6 +1117,14 @@ type ContractBase = Omit<
               };
               readonly id: {
                 readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly lambdaArn: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly lambdaUrl: {
+                readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly projectId: {
@@ -1143,8 +1196,11 @@ type ContractBase = Omit<
                 readonly commitMessage: { readonly column: 'commitMessage' };
                 readonly commitSha: { readonly column: 'commitSha' };
                 readonly createdAt: { readonly column: 'createdAt' };
+                readonly deploymentType: { readonly column: 'deploymentType' };
                 readonly finishedAt: { readonly column: 'finishedAt' };
                 readonly id: { readonly column: 'id' };
+                readonly lambdaArn: { readonly column: 'lambdaArn' };
+                readonly lambdaUrl: { readonly column: 'lambdaUrl' };
                 readonly projectId: { readonly column: 'projectId' };
                 readonly s3Path: { readonly column: 's3Path' };
                 readonly slug: { readonly column: 'slug' };
@@ -1474,6 +1530,13 @@ type ContractBase = Omit<
               { readonly name: 'FAILED'; readonly value: 'FAILED' },
             ];
           };
+          readonly DeploymentType: {
+            readonly codecId: 'pg/text@1';
+            readonly members: readonly [
+              { readonly name: 'STATIC'; readonly value: 'STATIC' },
+              { readonly name: 'SSR'; readonly value: 'SSR' },
+            ];
+          };
           readonly DomainStatus: {
             readonly codecId: 'pg/text@1';
             readonly members: readonly [
@@ -1498,6 +1561,10 @@ type ContractBase = Omit<
             { readonly name: 'BUILDING'; readonly value: 'BUILDING' },
             { readonly name: 'READY'; readonly value: 'READY' },
             { readonly name: 'FAILED'; readonly value: 'FAILED' },
+          ];
+          readonly DeploymentType: readonly [
+            { readonly name: 'STATIC'; readonly value: 'STATIC' },
+            { readonly name: 'SSR'; readonly value: 'SSR' },
           ];
           readonly DomainStatus: readonly [
             { readonly name: 'PENDING'; readonly value: 'PENDING' },

@@ -8,6 +8,7 @@ import {
 export interface QueueBuildInput {
   projectId: string
   projectSlug: string
+  framework: string
   deploymentId: string
   repoUrl: string
   branch: string
@@ -71,10 +72,23 @@ export async function queueBuild(input: QueueBuildInput): Promise<string> {
     { name: "GIT_BRANCH", value: input.branch },
     { name: "PROJECT_ID", value: input.projectId },
     { name: "PROJECT_SLUG", value: input.projectSlug },
+    { name: "FRAMEWORK", value: input.framework },
     { name: "DEPLOYMENT_ID", value: input.deploymentId },
     { name: "INSTALL_COMMAND", value: input.installCommand },
     { name: "BUILD_COMMAND", value: input.buildCommand },
     { name: "OUTPUT_DIR", value: input.outputDir },
+    ...(process.env.LAMBDA_EXECUTION_ROLE_ARN
+      ? [
+          {
+            name: "LAMBDA_EXECUTION_ROLE_ARN",
+            value: process.env.LAMBDA_EXECUTION_ROLE_ARN,
+          },
+        ]
+      : []),
+    {
+      name: "LAMBDA_S3_BUCKET",
+      value: process.env.AWS_BUCKET_NAME ?? "simple-vercel-output",
+    },
     { name: "BUILD_ENV_JSON", value: JSON.stringify(input.envVars) },
     ...(input.commitSha
       ? [{ name: "GIT_COMMIT_SHA", value: input.commitSha }]

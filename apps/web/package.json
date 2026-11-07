@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-ecs": "^3.1141.0",
+    "@aws-sdk/client-lambda": "^3.1141.0",
     "@dev-hoster/ui": "workspace:*",
     "@prisma/orm-postgres": "8.0.0-rc.18",
     "@tanstack/react-query": "^5.104.1",

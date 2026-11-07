@@ -109,6 +109,9 @@ export const builderStatusSchema = z.object({
   // Reported once the repo is cloned.
   commitSha: z.string().max(64).optional(),
   commitMessage: z.string().max(500).optional(),
+  deploymentType: z.enum(["STATIC", "SSR"]).optional(),
+  lambdaUrl: z.string().url().optional(),
+  lambdaArn: z.string().min(1).optional(),
 })
 
 export const deploymentsQuerySchema = z.object({

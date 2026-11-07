@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db"
+import { DeleteFunctionCommand, LambdaClient } from "@aws-sdk/client-lambda"
 import {
   createProjectSchema,
   defaultOutputDir,
@@ -140,6 +141,31 @@ export async function deleteProject(slug: string): Promise<boolean> {
       .filter((d) => d.taskArn && !isTerminalStatus(toDeployment(d).status))
       .map((d) => stopBuild(d.taskArn!, "Project deleted"))
   )
+
+  const lambdaClient = new LambdaClient({
+    endpoint: process.env.AWS_ENDPOINT_URL ?? "http://localhost:4566",
+    region: process.env.AWS_REGION ?? "us-east-1",
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "test",
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "test",
+    },
+  })
+  const lambdaDeletes = await Promise.allSettled(
+    deployments
+      .filter((deployment) => deployment.lambdaArn)
+      .map((deployment) =>
+        lambdaClient.send(
+          new DeleteFunctionCommand({ FunctionName: deployment.lambdaArn! })
+        )
+      )
+  )
+  const lambdaFailure = lambdaDeletes.find(
+    (result): result is PromiseRejectedResult => result.status === "rejected"
+  )
+  if (lambdaFailure) {
+    console.error("[projects] could not delete deployment Lambda", lambdaFailure.reason)
+    throw new Error("Could not clean up the project's Lambda deployments")
+  }
 
   // Project.activeDeploymentId points at a deployment, so clear it before the
   // cascade removes the deployments.

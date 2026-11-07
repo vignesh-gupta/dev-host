@@ -70,6 +70,9 @@ export function DeploymentDetail({
           <span className="flex flex-wrap items-center gap-2">
             <span className="font-mono">{d.slug}</span>
             <StatusBadge status={d.status} />
+            <span className="rounded border px-2 py-0.5 font-mono text-xs">
+              {d.deploymentType}
+            </span>
             {d.isActive && <LiveBadge />}
           </span>
         }
@@ -155,6 +158,21 @@ export function DeploymentDetail({
         <Fact label="Build time">
           <Duration start={d.startedAt} end={d.finishedAt} />
         </Fact>
+        {d.deploymentType === "SSR" && d.lambdaUrl && (
+          <Fact label="Lambda URL">
+            <span className="inline-flex max-w-full items-center gap-1">
+              <a
+                href={d.lambdaUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="truncate underline-offset-2 hover:underline"
+              >
+                {d.lambdaUrl}
+              </a>
+              <CopyButton value={d.lambdaUrl} label="Copy Lambda URL" />
+            </span>
+          </Fact>
+        )}
       </Section>
 
       <Timeline d={d} />

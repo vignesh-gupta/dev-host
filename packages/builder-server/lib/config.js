@@ -75,12 +75,7 @@ const s3Client = new S3Client({
 })
 
 async function sendS3Command(command) {
-  try {
-    await s3Client.send(command)
-  } catch (err) {
-    console.error(err)
-    publishLog(`Error: ${err}`)
-  }
+  await s3Client.send(command)
 }
 
 module.exports = { sendS3Command, publishLog, publishStatus, closePublisher }

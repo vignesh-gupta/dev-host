@@ -53,7 +53,36 @@ resource "aws_iam_role_policy" "builder_s3" {
     Statement = [{
       Effect   = "Allow"
       Action   = ["s3:PutObject"]
-      Resource = "${aws_s3_bucket.outputs.arn}/__outputs/*"
+      Resource = [
+        "${aws_s3_bucket.outputs.arn}/__outputs/*",
+        "${aws_s3_bucket.outputs.arn}/__lambdas/*",
+      ]
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "builder_lambda" {
+  name = "manage-deployed-lambdas"
+  role = aws_iam_role.builder_task.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "lambda:CreateFunction",
+        "lambda:UpdateFunctionCode",
+        "lambda:UpdateFunctionConfiguration",
+        "lambda:CreateFunctionUrlConfig",
+        "lambda:GetFunction",
+        "lambda:DeleteFunction",
+        "lambda:InvokeFunction",
+      ]
+      Resource = "*"
+    }, {
+      Effect   = "Allow"
+      Action   = ["iam:PassRole"]
+      Resource = aws_iam_role.deployed_lambda.arn
     }]
   })
 }
@@ -116,7 +145,10 @@ resource "aws_iam_user_policy" "uploader" {
     Statement = [{
       Effect   = "Allow"
       Action   = ["s3:PutObject"]
-      Resource = "${aws_s3_bucket.outputs.arn}/__outputs/*"
+      Resource = [
+        "${aws_s3_bucket.outputs.arn}/__outputs/*",
+        "${aws_s3_bucket.outputs.arn}/__lambdas/*",
+      ]
     }]
   })
 }

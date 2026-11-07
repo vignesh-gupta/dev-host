@@ -50,6 +50,19 @@
               }
             ]
           },
+          "DeploymentType": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "STATIC",
+                "value": "STATIC"
+              },
+              {
+                "name": "SSR",
+                "value": "SSR"
+              }
+            ]
+          },
           "DomainStatus": {
             "codecId": "pg/text@1",
             "members": [
@@ -120,6 +133,19 @@
                   "kind": "scalar"
                 }
               },
+              "deploymentType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "DeploymentType",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
               "finishedAt": {
                 "nullable": true,
                 "type": {
@@ -129,6 +155,20 @@
               },
               "id": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "lambdaArn": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "lambdaUrl": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -238,11 +278,20 @@
                 "createdAt": {
                   "column": "createdAt"
                 },
+                "deploymentType": {
+                  "column": "deploymentType"
+                },
                 "finishedAt": {
                   "column": "finishedAt"
                 },
                 "id": {
                   "column": "id"
+                },
+                "lambdaArn": {
+                  "column": "lambdaArn"
+                },
+                "lambdaUrl": {
+                  "column": "lambdaUrl"
                 },
                 "projectId": {
                   "column": "projectId"
@@ -766,6 +815,11 @@
             "Deployment": {
               "checks": [
                 {
+                  "expression": "\"deploymentType\" IN ('STATIC', 'SSR')",
+                  "name": "Deployment_deploymentType_check_df52cf98",
+                  "prefix": "Deployment_deploymentType_check"
+                },
+                {
                   "expression": "\"status\" IN ('QUEUED', 'BUILDING', 'READY', 'FAILED')",
                   "name": "Deployment_status_check_3f95aabb",
                   "prefix": "Deployment_status_check"
@@ -796,6 +850,21 @@
                   },
                   "nullable": false
                 },
+                "deploymentType": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "STATIC"
+                  },
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "DeploymentType",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
                 "finishedAt": {
                   "codecId": "pg/timestamptz-temporal@1",
                   "dataType": "pg/timestamptz",
@@ -805,6 +874,16 @@
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": false
+                },
+                "lambdaArn": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "lambdaUrl": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 },
                 "projectId": {
                   "codecId": "pg/text@1",
@@ -1334,6 +1413,13 @@
                 "FAILED"
               ]
             },
+            "DeploymentType": {
+              "kind": "valueSet",
+              "values": [
+                "STATIC",
+                "SSR"
+              ]
+            },
             "DomainStatus": {
               "kind": "valueSet",
               "values": [
@@ -1357,7 +1443,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "e4c4e39e80e067a40392255ee7cfe738e7d69e785c0d7ef08044ba9a3e4797c6"
+    "storageHash": "006b4d4c871b67ed7546a1492dbf249b6b9c619b526f925c57e674eb11090bef"
   },
   "execution": {
     "executionHash": "eea5b73ec5209810ee7669b0445cf459b073531e502a7a459e2929b48c54848c",

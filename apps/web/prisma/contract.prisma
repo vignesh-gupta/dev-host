@@ -20,6 +20,11 @@ enum DeploymentStatus {
   FAILED
 }
 
+enum DeploymentType {
+  STATIC
+  SSR
+}
+
 // Placeholder for future auth. Every row defaults to user 0 (the "system" user)
 // seeded in prisma/seed.ts. Swap in real auth later without touching Project/Deployment.
 model User {
@@ -82,6 +87,9 @@ model Deployment {
 
   status DeploymentStatus @default(QUEUED)
   s3Path String?
+  deploymentType DeploymentType @default(STATIC)
+  lambdaUrl String?
+  lambdaArn String?
   createdAt TimestamptzString @default(now())
   updatedAt temporal.updatedAtString()
   startedAt  DateTime?

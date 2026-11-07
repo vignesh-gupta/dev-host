@@ -12,6 +12,8 @@ export const DEPLOYMENT_STATUSES = [
 ] as const
 export type DeploymentStatus = (typeof DEPLOYMENT_STATUSES)[number]
 
+export type DeploymentType = "STATIC" | "SSR"
+
 export const isTerminalStatus = (s: DeploymentStatus) =>
   s === "READY" || s === "FAILED"
 
@@ -32,6 +34,9 @@ export interface Deployment {
   branch: string | null
   status: DeploymentStatus
   s3Path: string | null
+  deploymentType: DeploymentType
+  lambdaUrl: string | null
+  lambdaArn: string | null
   createdAt: string
   updatedAt: string
   startedAt: string | null

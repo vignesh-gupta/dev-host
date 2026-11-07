@@ -3,9 +3,13 @@ const fs = require("fs")
 const { publishLog } = require("./lib/config")
 const { closePublisher } = require("./lib/config")
 const { cloneRepo } = require("./lib/git")
-const { runBuild } = require("./lib/buildRunner")
-const { uploadDist } = require("./lib/uploader")
+const { runBuild, parseEnv } = require("./lib/buildRunner")
+const { uploadDist, uploadLambdaZip } = require("./lib/uploader")
 const { updateDeploymentStatus } = require("./lib/deploymentStatus")
+const { detectDeploymentType } = require("./lib/frameworkDetector")
+const { buildWithOpenNext } = require("./lib/openNextBuilder")
+const { packageLambda } = require("./lib/lambdaPackager")
+const { deployLambda } = require("./lib/lambdaDeployer")
 
 const PROJECT_ID = process.env.PROJECT_ID
 const DEPLOYMENT_ID = process.env.DEPLOYMENT_ID
@@ -33,6 +37,16 @@ async function init() {
     commitMessage: commit.message,
   })
 
+  let detection = detectDeploymentType(outDirPath, {
+    framework: process.env.FRAMEWORK,
+    configuredOutputDir: OUTPUT_DIR,
+  })
+  publishLog(`Framework: ${detection.framework}`)
+  publishLog(`Deployment type: ${detection.deploymentType}`)
+  if (detection.deploymentType === "SSR") {
+    publishLog("Next.js SSR detected — Lambda packaging will run after the build")
+  }
+
   await runBuild(outDirPath, {
     installCommand: process.env.INSTALL_COMMAND,
     buildCommand: process.env.BUILD_COMMAND,
@@ -41,20 +55,51 @@ async function init() {
 
   publishLog("Build completed")
 
-  const distFolderPath = path.resolve(outDirPath, OUTPUT_DIR)
-  if (!distFolderPath.startsWith(outDirPath + path.sep)) {
-    throw new Error(`Output directory "${OUTPUT_DIR}" must be inside the repository`)
-  }
+  detection = detectDeploymentType(outDirPath, {
+    framework: detection.framework,
+    configuredOutputDir: OUTPUT_DIR,
+  })
+  publishLog(`Build output decision: ${detection.deploymentType}`)
 
-  if (!fs.existsSync(distFolderPath)) {
-    publishLog(`Error: output directory "${OUTPUT_DIR}" not found`)
-    const contents = fs.readdirSync(outDirPath)
-    publishLog(`Repository root contains: ${contents.join(", ")}`)
-    throw new Error(`Output directory "${OUTPUT_DIR}" not found`)
-  }
+  if (detection.deploymentType === "STATIC") {
+    const distFolderPath = path.resolve(outDirPath, detection.outputDir)
+    if (!distFolderPath.startsWith(outDirPath + path.sep)) {
+      throw new Error(
+        `Output directory "${detection.outputDir}" must be inside the repository`
+      )
+    }
 
-  const s3Path = await uploadDist(distFolderPath, PROJECT_ID, DEPLOYMENT_ID)
-  await updateDeploymentStatus("READY", { s3Path })
+    if (!fs.existsSync(distFolderPath)) {
+      publishLog(`Error: output directory "${detection.outputDir}" not found`)
+      const contents = fs.readdirSync(outDirPath)
+      publishLog(`Repository root contains: ${contents.join(", ")}`)
+      throw new Error(`Output directory "${detection.outputDir}" not found`)
+    }
+
+    const s3Path = await uploadDist(distFolderPath, PROJECT_ID, DEPLOYMENT_ID)
+    await updateDeploymentStatus("READY", {
+      s3Path,
+      deploymentType: "STATIC",
+    })
+  } else {
+    const openNext = await buildWithOpenNext(outDirPath)
+    const s3Path = await uploadDist(openNext.assetsDir, PROJECT_ID, DEPLOYMENT_ID)
+    const zipPath = await packageLambda(openNext.serverDir, DEPLOYMENT_ID)
+    const lambdaKey = await uploadLambdaZip(zipPath, PROJECT_ID, DEPLOYMENT_ID)
+    const lambda = await deployLambda({
+      projectId: PROJECT_ID,
+      deploymentId: DEPLOYMENT_ID,
+      s3Bucket: process.env.LAMBDA_S3_BUCKET || process.env.AWS_BUCKET_NAME,
+      s3Key: lambdaKey,
+      environment: parseEnv(process.env.BUILD_ENV_JSON),
+    })
+    await updateDeploymentStatus("READY", {
+      s3Path,
+      deploymentType: "SSR",
+      lambdaUrl: lambda.functionUrl,
+      lambdaArn: lambda.functionArn,
+    })
+  }
 }
 
 init()

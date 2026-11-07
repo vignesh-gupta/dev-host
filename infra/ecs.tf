@@ -76,6 +76,7 @@ resource "aws_ecs_task_definition" "builder" {
       # builder-server's S3 client uses forcePathStyle with this endpoint.
       { name = "AWS_ENDPOINT_URL", value = "https://s3.${var.aws_region}.amazonaws.com" },
       { name = "AWS_BUCKET_NAME", value = aws_s3_bucket.outputs.bucket },
+      { name = "LAMBDA_EXECUTION_ROLE_ARN", value = aws_iam_role.deployed_lambda.arn },
       { name = "REDIS_URL", value = local.redis_url },
       { name = "WEB_BASE_URL", value = var.web_base_url },
     ]

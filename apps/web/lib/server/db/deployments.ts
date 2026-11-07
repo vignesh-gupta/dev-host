@@ -18,6 +18,7 @@ import {
 import { publishEvent } from "@/lib/server/logs"
 import { refreshProjectCacheById } from "@/lib/cache"
 import { queueBuild, stopBuild } from "@/lib/server/queue-build"
+import { DeleteFunctionCommand, LambdaClient } from "@aws-sdk/client-lambda"
 
 export async function getDeploymentById(
   id: string
@@ -94,6 +95,7 @@ export async function createDeployment(
     ProjectRow,
     | "id"
     | "slug"
+    | "framework"
     | "repoUrl"
     | "branch"
     | "installCommand"
@@ -118,6 +120,7 @@ export async function createDeployment(
     const taskArn = await queueBuild({
       projectId: project.id,
       projectSlug: project.slug,
+      framework: project.framework,
       deploymentId: row.id,
       repoUrl: project.repoUrl,
       branch: row.branch ?? project.branch,
@@ -150,7 +153,14 @@ export async function createDeployment(
 export async function updateDeploymentStatus(
   id: string,
   status: DeploymentStatus,
-  extra: { s3Path?: string; commitSha?: string; commitMessage?: string } = {}
+  extra: {
+    s3Path?: string
+    commitSha?: string
+    commitMessage?: string
+    deploymentType?: "STATIC" | "SSR"
+    lambdaUrl?: string
+    lambdaArn?: string
+  } = {}
 ): Promise<Deployment | null> {
   const existing = await db.orm.public.Deployment.where({ id }).first()
   if (!existing) return null
@@ -165,6 +175,15 @@ export async function updateDeploymentStatus(
     ...(status === "BUILDING" && !existing.startedAt ? { startedAt: now } : {}),
     ...(isTerminalStatus(status) ? { finishedAt: now } : {}),
     ...(status === "READY" && extra.s3Path ? { s3Path: extra.s3Path } : {}),
+    ...(status === "READY" && extra.deploymentType
+      ? { deploymentType: extra.deploymentType }
+      : {}),
+    ...(status === "READY" && extra.lambdaUrl
+      ? { lambdaUrl: extra.lambdaUrl }
+      : {}),
+    ...(status === "READY" && extra.lambdaArn
+      ? { lambdaArn: extra.lambdaArn }
+      : {}),
     ...(extra.commitSha ? { commitSha: extra.commitSha } : {}),
     ...(extra.commitMessage ? { commitMessage: extra.commitMessage } : {}),
   }
@@ -220,4 +239,42 @@ export async function cancelDeployment(
     console.error("[logs] could not publish", err)
   }
   return updated
+}
+
+/** Deletes a deployment and its external Lambda, if one was created. */
+export async function deleteDeployment(id: string): Promise<boolean> {
+  const row = await db.orm.public.Deployment.where({ id }).first()
+  if (!row) return false
+
+  if (row.taskArn && !isTerminalStatus(toDeployment(row).status)) {
+    await stopBuild(row.taskArn, "Deployment deleted")
+  }
+
+  if (row.lambdaArn) {
+    const lambda = new LambdaClient({
+      endpoint: process.env.AWS_ENDPOINT_URL ?? "http://localhost:4566",
+      region: process.env.AWS_REGION ?? "us-east-1",
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "test",
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "test",
+      },
+    })
+    await lambda.send(
+      new DeleteFunctionCommand({ FunctionName: row.lambdaArn })
+    )
+  }
+
+  await db.transaction(async (tx) => {
+    const project = await tx.orm.public.Project.where({
+      id: row.projectId,
+    }).first()
+    if (project?.activeDeploymentId === id) {
+      await tx.orm.public.Project.where({ id: row.projectId }).update({
+        activeDeploymentId: null,
+      })
+    }
+    await tx.orm.public.Deployment.where({ id }).delete()
+  })
+  await refreshProjectCacheById(row.projectId)
+  return true
 }

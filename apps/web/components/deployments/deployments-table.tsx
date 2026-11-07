@@ -40,6 +40,7 @@ export function DeploymentsTable({
         <TableRow className="hover:bg-transparent">
           <TableHead className="pl-3">Deployment</TableHead>
           <TableHead>Status</TableHead>
+          <TableHead>Mode</TableHead>
           <TableHead className="hidden md:table-cell">Branch</TableHead>
           <TableHead className="hidden lg:table-cell">Duration</TableHead>
           <TableHead className="pr-3 text-right">Created</TableHead>
@@ -101,6 +102,9 @@ export function DeploymentsTable({
               </TableCell>
               <TableCell>
                 <StatusBadge status={d.status} />
+              </TableCell>
+              <TableCell className="font-mono text-xs text-muted-foreground">
+                {d.deploymentType}
               </TableCell>
               <TableCell className="hidden md:table-cell">
                 <span className="inline-flex items-center gap-1 font-mono text-muted-foreground">

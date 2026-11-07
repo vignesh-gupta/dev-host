@@ -14,6 +14,7 @@ locals {
       "ECS_LAUNCH_TYPE=\"FARGATE\"",
       "ECS_VPC_SUBNETS=\"${join(",", aws_subnet.public[*].id)}\"",
       "ECS_SECURITY_GROUPS=\"${aws_security_group.builder.id}\"",
+      "LAMBDA_EXECUTION_ROLE_ARN=\"${aws_iam_role.deployed_lambda.arn}\"",
     ],
     var.create_web_iam_user ? [
       "AWS_ACCESS_KEY_ID=\"${aws_iam_access_key.web[0].id}\"",
@@ -61,6 +62,10 @@ output "builder_image_push" {
     docker build -t ${aws_ecr_repository.builder.repository_url}:${var.builder_image_tag} packages/builder-server
     docker push ${aws_ecr_repository.builder.repository_url}:${var.builder_image_tag}
   EOT
+}
+
+output "lambda_execution_role_arn" {
+  value = aws_iam_role.deployed_lambda.arn
 }
 
 output "next_steps" {
