@@ -6,15 +6,15 @@ const { publishLog } = require("./config")
 
 const execFileAsync = promisify(execFile)
 
-function getDirectorySize(directory) {
+function getPathSize(targetPath) {
+  const stat = fs.lstatSync(targetPath)
+  if (stat.isSymbolicLink()) return 0
+  if (stat.isFile()) return stat.size
+  if (!stat.isDirectory()) return 0
+
   let total = 0
-  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-    const entryPath = path.join(directory, entry.name)
-    total += entry.isDirectory()
-      ? getDirectorySize(entryPath)
-      : entry.isFile()
-        ? fs.statSync(entryPath).size
-        : 0
+  for (const entry of fs.readdirSync(targetPath, { withFileTypes: true })) {
+    total += getPathSize(path.join(targetPath, entry.name))
   }
   return total
 }
@@ -24,7 +24,7 @@ function logOpenNextSizes(outputDir) {
   for (const entry of fs.readdirSync(outputDir, { withFileTypes: true })) {
     const entryPath = path.join(outputDir, entry.name)
     publishLog(
-      `  ${entry.name}: ${getDirectorySize(entryPath)} bytes`
+      `  ${entry.name}: ${getPathSize(entryPath)} bytes`
     )
   }
 
@@ -35,7 +35,7 @@ function logOpenNextSizes(outputDir) {
     })) {
       const entryPath = path.join(serverFunctionsDir, entry.name)
       publishLog(
-        `  server function ${entry.name}: ${getDirectorySize(entryPath)} bytes`
+        `  server function ${entry.name}: ${getPathSize(entryPath)} bytes`
       )
     }
   }
@@ -54,7 +54,7 @@ function logOpenNextSizes(outputDir) {
         const entryPath = path.join(directory, entry.name)
         directories.push({
           path: entryPath,
-          bytes: getDirectorySize(entryPath),
+          bytes: getPathSize(entryPath),
         })
         walk(entryPath, depth + 1)
       }
@@ -70,7 +70,7 @@ function logOpenNextSizes(outputDir) {
   }
 
   publishLog(
-    `OpenNext server function total: ${getDirectorySize(
+    `OpenNext server function total: ${getPathSize(
       path.join(outputDir, "server-functions", "default")
     )} bytes`
   )
@@ -120,7 +120,7 @@ async function buildWithOpenNext(repoDir) {
       `export default {
   default: {
         minify: true,
-        override: { wrapper: "aws-lambda-streaming" },
+        override: { wrapper: "aws-lambda" },
         install: {
       packages: [${JSON.stringify(`next@${nextVersion}`)}],
       additionalArgs: "--omit=optional",
@@ -152,4 +152,4 @@ async function buildWithOpenNext(repoDir) {
   return { serverDir, assetsDir }
 }
 
-module.exports = { buildWithOpenNext }
+module.exports = { buildWithOpenNext, getPathSize, logOpenNextSizes }

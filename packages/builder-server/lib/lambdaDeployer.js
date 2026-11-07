@@ -94,7 +94,7 @@ async function deployLambda({
   const urlInput = {
     FunctionName: name,
     AuthType: "NONE",
-    InvokeMode: "RESPONSE_STREAM",
+    InvokeMode: "BUFFERED",
   }
   let url
   try {

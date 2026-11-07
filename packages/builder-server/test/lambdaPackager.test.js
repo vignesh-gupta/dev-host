@@ -6,6 +6,7 @@ const test = require("node:test")
 const {
   getDirectorySize,
   assertLambdaSize,
+  createPackageStagingDirectory,
   isPrunableDirectory,
   MAX_UNCOMPRESSED_BYTES,
 } = require("../lib/lambdaPackager")
@@ -32,4 +33,37 @@ test("size guard rejects packages above the Lambda expanded limit", () => {
     () => assertLambdaSize(MAX_UNCOMPRESSED_BYTES + 1),
     /AWS allows at most/
   )
+})
+
+test("stages pnpm symlinks as real runtime files", (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "builder-symlink-"))
+  const target = path.join(root, "real-package")
+  const link = path.join(root, "node_modules", "next")
+  fs.mkdirSync(target, { recursive: true })
+  fs.mkdirSync(path.dirname(link), { recursive: true })
+  fs.writeFileSync(path.join(target, "package.json"), '{"name":"next"}')
+
+  try {
+    fs.symlinkSync(target, link, "junction")
+  } catch (error) {
+    t.skip(`symlinks are unavailable: ${error.message}`)
+    return
+  }
+
+  const staging = createPackageStagingDirectory(root, "test")
+  try {
+    assert.equal(
+      fs.lstatSync(path.join(staging, "node_modules", "next")).isDirectory(),
+      true
+    )
+    assert.equal(
+      fs.readFileSync(
+        path.join(staging, "node_modules", "next", "package.json"),
+        "utf8"
+      ),
+      '{"name":"next"}'
+    )
+  } finally {
+    fs.rmSync(staging, { recursive: true, force: true })
+  }
 })

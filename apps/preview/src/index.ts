@@ -5,6 +5,36 @@ const PORT = process.env.PORT || 8000
 const app = express()
 const proxy = httpProxy.createProxy()
 const s3BaseUrl = process.env.S3_BASE_URL
+const proxyTimeout = Number(process.env.PROXY_TIMEOUT_MS || 30_000)
+
+function isHttpResponse(
+  value: unknown
+): value is {
+  headersSent: boolean
+  writableEnded: boolean
+  writeHead: (statusCode: number, headers: Record<string, string>) => void
+  end: (body: string) => void
+} {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "headersSent" in value &&
+    "writableEnded" in value &&
+    "writeHead" in value &&
+    "end" in value
+  )
+}
+
+proxy.on("error", (error, req, res) => {
+  console.error("Preview upstream proxy failed:", error)
+  if (!isHttpResponse(res)) return
+  if (!res.headersSent) {
+    res.writeHead(502, { "content-type": "text/plain; charset=utf-8" })
+  }
+  if (!res.writableEnded) {
+    res.end("Unable to reach the deployment")
+  }
+})
 
 function lambdaProxyOptions(lambdaUrl: string) {
   const parsedLambdaUrl = new URL(lambdaUrl)
@@ -14,7 +44,7 @@ function lambdaProxyOptions(lambdaUrl: string) {
     parsedLambdaUrl.hostname.endsWith(".localhost")
 
   if (!isLocalLambdaUrl) {
-    return { target: lambdaUrl, changeOrigin: true }
+    return { target: lambdaUrl, changeOrigin: true, proxyTimeout }
   }
 
   const localEndpoint = new URL(
@@ -29,6 +59,30 @@ function lambdaProxyOptions(lambdaUrl: string) {
     target: localEndpoint.toString(),
     changeOrigin: false,
     headers: { host: parsedLambdaUrl.host },
+    proxyTimeout,
+  }
+}
+
+function isStaticAssetRequest(pathname: string) {
+  if (pathname.startsWith("/_next/static/")) return true
+  if (pathname === "/favicon.ico") return true
+
+  return /\.(?:avif|css|gif|ico|jpeg|jpg|js|json|map|png|svg|txt|webmanifest|webp|woff2?)$/i.test(
+    pathname
+  )
+}
+
+function staticProxyOptions(
+  projectId: string,
+  deploymentId: string,
+  requestUrl: URL
+) {
+  const objectPath = requestUrl.pathname.replace(/^\/+/, "")
+  return {
+    target: `${s3BaseUrl!.replace(/\/+$/, "")}/${projectId}/${deploymentId}/${objectPath}${requestUrl.search}`,
+    changeOrigin: true,
+    ignorePath: true,
+    proxyTimeout,
   }
 }
 
@@ -70,6 +124,15 @@ app.use(async (req, res) => {
         throw new Error("SSR project is missing its Lambda Function URL")
       }
 
+      const requestUrl = new URL(req.url, "http://preview.local")
+      if (activeDeploymentId && isStaticAssetRequest(requestUrl.pathname)) {
+        return proxy.web(
+          req,
+          res,
+          staticProxyOptions(projectId, activeDeploymentId, requestUrl)
+        )
+      }
+
       const proxyOptions = lambdaProxyOptions(lambdaUrl)
       console.log({
         message: "Proxying SSR request",
@@ -93,6 +156,7 @@ app.use(async (req, res) => {
       target,
       changeOrigin: true,
       ignorePath: true,
+      proxyTimeout,
     })
   } catch (error) {
     console.error("Failed to resolve base URL:", error)

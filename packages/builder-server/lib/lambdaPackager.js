@@ -58,6 +58,31 @@ function getDirectorySize(directory) {
   return total
 }
 
+function shouldCopyPath(sourcePath, serverDir) {
+  const relativePath = path.relative(serverDir, sourcePath)
+  let stat
+  try {
+    stat = fs.statSync(sourcePath)
+  } catch {
+    return false
+  }
+
+  if (stat.isDirectory()) return !isPrunableDirectory(relativePath)
+  return stat.isFile() && shouldPackageFile(sourcePath)
+}
+
+function createPackageStagingDirectory(serverDir, deploymentId) {
+  const stagingDir = fs.mkdtempSync(
+    path.join("/tmp", `lambda-staging-${deploymentId || "deployment"}-`)
+  )
+  fs.cpSync(serverDir, stagingDir, {
+    recursive: true,
+    dereference: true,
+    filter: (sourcePath) => shouldCopyPath(sourcePath, serverDir),
+  })
+  return stagingDir
+}
+
 function assertLambdaSize(uncompressedBytes) {
   if (uncompressedBytes > IMAGE_FALLBACK_BYTES) {
     publishLog(
@@ -72,31 +97,39 @@ function assertLambdaSize(uncompressedBytes) {
 }
 
 function packageLambda(serverDir, deploymentId) {
-  const uncompressedBytes = getDirectorySize(serverDir)
+  const stagingDir = createPackageStagingDirectory(serverDir, deploymentId)
+  const uncompressedBytes = getDirectorySize(stagingDir)
   publishLog(
     `Lambda package uncompressed size: ${uncompressedBytes} bytes (limit ${MAX_UNCOMPRESSED_BYTES} bytes)`
   )
-  assertLambdaSize(uncompressedBytes)
+  try {
+    assertLambdaSize(uncompressedBytes)
+  } catch (error) {
+    fs.rmSync(stagingDir, { recursive: true, force: true })
+    throw error
+  }
 
   const zipFilePath = path.join("/tmp", `lambda-${deploymentId || "deployment"}.zip`)
   return new Promise((resolve, reject) => {
     const output = fs.createWriteStream(zipFilePath)
     const archive = archiver("zip", { zlib: { level: 9 } })
+    const cleanup = () => fs.rmSync(stagingDir, { recursive: true, force: true })
 
     output.on("close", () => {
       publishLog(`Created Lambda package (${archive.pointer()} bytes)`)
+      cleanup()
       resolve(zipFilePath)
     })
-    output.on("error", reject)
-    archive.on("error", reject)
-    archive.pipe(output)
-    archive.directory(serverDir, false, (entry) => {
-      const relativePath = entry.name
-      if (entry.stats.isDirectory()) {
-        return isPrunableDirectory(relativePath) ? false : entry
-      }
-      return shouldPackageFile(relativePath) ? entry : false
+    output.on("error", (error) => {
+      cleanup()
+      reject(error)
     })
+    archive.on("error", (error) => {
+      cleanup()
+      reject(error)
+    })
+    archive.pipe(output)
+    archive.directory(stagingDir, false)
     archive.finalize().catch(reject)
   })
 }
@@ -104,6 +137,7 @@ function packageLambda(serverDir, deploymentId) {
 module.exports = {
   packageLambda,
   getDirectorySize,
+  createPackageStagingDirectory,
   assertLambdaSize,
   isPrunableDirectory,
   MAX_UNCOMPRESSED_BYTES,
