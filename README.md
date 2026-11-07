@@ -157,5 +157,13 @@ use the same development and validation path.
 
 ## License
 
-No license has been declared in this repository yet. Treat the code as
-all-rights-reserved until a project license is added.
+This project is licensed under the [MIT License](./LICENSE).
+
+## Author
+
+- [![@vigneshfixes](https://img.shields.io/badge/vigneshfixes-000000?style=for-the-badge&logo=x&logoColor=white)](https://twitter.com/intent/follow?screen_name=vigneshfixes)
+- [![Vignesh Gupta](https://img.shields.io/badge/Website-000000?style=for-the-badge&logo=About.me&logoColor=white)](https://vigneshgupta.vercel.app/)
+
+## Thank you!
+
+Hope you like it. Please do ⭐ the repo. Happy coding!
